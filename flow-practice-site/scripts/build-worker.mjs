@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const html = await readFile(resolve(root, 'dist/index.html'), 'utf8');
+const logo = await readFile(resolve(root, 'dist/logo.svg'), 'utf8');
 const manifest = await readFile(resolve(root, '.openai/hosting.json'), 'utf8');
 
 const worker = `const page = ${JSON.stringify(html)};
+const logo = ${JSON.stringify(logo)};
 
 const securityHeaders = {
   'content-security-policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
@@ -63,6 +65,9 @@ export default {
     if (url.pathname === '/api/explain') return explain(request);
     if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
       return new Response(page, { headers: { ...securityHeaders, 'content-type': 'text/html; charset=utf-8' } });
+    }
+    if (request.method === 'GET' && url.pathname === '/logo.svg') {
+      return new Response(logo, { headers: { ...securityHeaders, 'content-type': 'image/svg+xml; charset=utf-8', 'cache-control': 'public, max-age=86400' } });
     }
     return new Response('Not found', { status: 404, headers: securityHeaders });
   }

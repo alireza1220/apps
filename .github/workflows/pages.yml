@@ -27,9 +27,11 @@ jobs:
       - name: Assemble static site
         run: |
           mkdir -p _site/flow-practice-site _site/health-journal _site/reflection-space
-          cp site/index.html _site/index.html
+          cp -R site/. _site/
           cp flow-practice-site/dist/index.html _site/flow-practice-site/index.html
+          cp flow-practice-site/dist/logo.svg _site/flow-practice-site/logo.svg
           cp health-journal/dist/index.html _site/health-journal/index.html
+          cp health-journal/dist/logo.svg _site/health-journal/logo.svg
           cp -R reflection-space/dist/. _site/reflection-space/
           touch _site/.nojekyll
 
