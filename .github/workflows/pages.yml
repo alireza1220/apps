@@ -26,9 +26,10 @@ jobs:
 
       - name: Assemble static site
         run: |
-          mkdir -p _site/flow-practice-site
+          mkdir -p _site/flow-practice-site _site/health-journal
           cp site/index.html _site/index.html
           cp flow-practice-site/dist/index.html _site/flow-practice-site/index.html
+          cp health-journal/dist/index.html _site/health-journal/index.html
           touch _site/.nojekyll
 
       - name: Upload Pages artifact
