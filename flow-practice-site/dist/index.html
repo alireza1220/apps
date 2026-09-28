@@ -329,6 +329,13 @@
     .settings-card h3 { margin: 0 0 4px; font-size: 1rem; }
     .settings-card > p { margin: 0 0 15px; color: var(--ink-soft); font-size: .84rem; }
     .ai-enabled-note { display: none; margin: 11px 0 0; color: var(--good); font-size: .8rem; font-weight: 800; }
+    .security-warning { margin: 14px 0; padding: 13px 14px; color: #624c0d; background: #fff8df; border: 1px solid #ead898; border-radius: 11px; font-size: .8rem; line-height: 1.55; }
+    .security-warning strong { display: block; margin-bottom: 3px; color: #4b3905; }
+    .security-warning [hidden] { display: none; }
+    .static-pages .security-warning { color: #802f37; background: #fff0f1; border-color: #efc3c7; }
+    .static-pages .security-warning strong { color: #6f2028; }
+    .static-pages #apiKey:disabled { color: #7b8498; background: #eef0f5; cursor: not-allowed; }
+    .static-pages #toggleKey:disabled { opacity: .55; cursor: not-allowed; }
     body.ai-enabled .ai-enabled-note { display: block; }
     #openAIComprehension[hidden] { display: none; }
     .stage-guide {
@@ -936,13 +943,18 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       <section class="settings-card" aria-labelledby="openaiSettingsTitle">
         <h3 id="openaiSettingsTitle">OpenAI connection</h3>
         <p>Add your API key to unlock AI comprehension as a separate practice option.</p>
+        <div class="security-warning" role="note">
+          <strong id="keyWarningTitle">API keys are secrets.</strong>
+          <span id="generalKeyWarning">Official guidance recommends keeping API keys out of browser apps. FLOW does not save this field, but clicking Explain sends the key to this site’s backend so it can relay the request to OpenAI. Use only a restricted, short-lived project key.</span>
+          <span id="staticPagesWarning" hidden>This static GitHub Pages demo has no AI backend. Do not enter an API key here.</span>
+        </div>
         <label for="apiKey">OpenAI API key</label>
         <div class="key-row">
           <input id="apiKey" type="password" placeholder="sk-…" autocomplete="off" autocapitalize="none" spellcheck="false">
           <button class="key-control" id="toggleKey" type="button" aria-pressed="false">Show</button>
           <button class="key-control" id="forgetKey" type="button">Remove</button>
         </div>
-        <p class="key-note"><strong>Session only:</strong> the key stays in this tab and is never saved by FLOW. Use a restricted, temporary project key.</p>
+        <p class="key-note"><strong>Remove it when finished:</strong> the key is not written to browser storage. Select Remove after use, close the tab, and revoke or rotate the key if you suspect exposure.</p>
         <p class="ai-enabled-note">AI comprehension is now available in Practice.</p>
         <p class="ai-status" id="keyStatus" role="status" aria-live="polite"></p>
       </section>
@@ -1045,6 +1057,15 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       let loadingPassage = false;
       let testHintsUsed = false;
       const libraryDialog = document.querySelector('#libraryDialog');
+      const isStaticPages = location.hostname.endsWith('.github.io');
+      if (isStaticPages) {
+        document.body.classList.add('static-pages');
+        els.apiKey.disabled = true;
+        els.apiKey.placeholder = 'Unavailable on this static demo';
+        document.querySelector('#toggleKey').disabled = true;
+        document.querySelector('#generalKeyWarning').hidden = true;
+        document.querySelector('#staticPagesWarning').hidden = false;
+      }
 
       function persistLibrary() {
         try {
@@ -1288,6 +1309,13 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       }
 
       function updateAIAvailability({ announce = false } = {}) {
+        if (isStaticPages) {
+          document.body.classList.remove('ai-enabled');
+          els.openAI.hidden = true;
+          els.keyStatus.textContent = 'AI comprehension is unavailable on this static GitHub Pages demo.';
+          els.keyStatus.classList.add('error');
+          return;
+        }
         const enabled = hasValidAPIKey();
         document.body.classList.toggle('ai-enabled', enabled);
         els.openAI.hidden = !enabled;
@@ -1382,6 +1410,10 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       }
 
       async function explainPassage() {
+        if (isStaticPages) {
+          setAIStatus('AI comprehension is unavailable on this static GitHub Pages demo. Do not enter an API key here.', true);
+          return;
+        }
         const apiKey = els.apiKey.value.trim();
         const passage = els.source.value.trim();
         if (!apiKey || apiKey.length < 20) {
@@ -1431,7 +1463,7 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
           els.aiOutput.textContent = explanation;
           els.aiResult.hidden = false;
           lastExplainedSource = passage;
-          setAIStatus('Explanation ready. Make sure it matches your understanding of the passage.');
+          setAIStatus('Explanation ready. Make sure it matches your understanding, then remove your API key in Settings when finished.');
         } catch (error) {
           const message = error instanceof TypeError
             ? 'Could not reach OpenAI from this browser. Check your connection and try again.'
@@ -1745,7 +1777,7 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       document.querySelector('#clearExplanation').addEventListener('click', () => {
         els.aiOutput.textContent = '';
         els.aiResult.hidden = true;
-        setAIStatus('Explanation cleared. Your API key remains only in this tab.');
+        setAIStatus('Explanation cleared. Remove your API key in Settings when finished.');
       });
       document.querySelector('#forgetKey').addEventListener('click', () => {
         els.apiKey.value = '';
@@ -1756,6 +1788,7 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
         els.keyStatus.textContent = 'API key removed from this tab.';
         els.keyStatus.classList.remove('error');
       });
+      window.addEventListener('pagehide', () => { els.apiKey.value = ''; });
       document.querySelector('#editPassage').addEventListener('click', () => {
         document.body.classList.remove('session-active', 'focus-mode');
         els.focusButton.textContent = 'Focus mode';
