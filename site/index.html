@@ -77,9 +77,9 @@
 
     .card {
       display: flex;
-      min-height: 290px;
+      min-height: 470px;
       flex-direction: column;
-      padding: 25px;
+      padding: 0;
       color: inherit;
       text-decoration: none;
       background: var(--card);
@@ -98,13 +98,20 @@
     }
 
     .icon {
-      width: 50px;
-      height: 50px;
-      margin-bottom: 42px;
-      border-radius: 14px;
+      width: 100%;
+      aspect-ratio: 1;
+      flex: 0 0 auto;
       overflow: hidden;
+      background: var(--ink);
     }
-    .icon img { display: block; width: 100%; height: 100%; }
+    .icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+    .card-copy {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      padding: 21px 23px 23px;
+    }
 
     .tag {
       width: max-content;
@@ -158,26 +165,32 @@
     <section class="grid" aria-label="Available apps">
       <a class="card" href="./flow-practice-site/">
         <div class="icon"><img src="./assets/flow.svg" alt=""></div>
-        <span class="tag">Learning</span>
-        <h2>Flow Practice</h2>
-        <p class="description">Memorize exact passages with first-letter cues, progressive recall, and instant feedback.</p>
-        <span class="open">Open app <span class="arrow" aria-hidden="true">&rarr;</span></span>
+        <div class="card-copy">
+          <span class="tag">Learning</span>
+          <h2>Flow Practice</h2>
+          <p class="description">Memorize exact passages with first-letter cues, progressive recall, and instant feedback.</p>
+          <span class="open">Open app <span class="arrow" aria-hidden="true">&rarr;</span></span>
+        </div>
       </a>
 
       <a class="card" href="./health-journal/">
         <div class="icon"><img src="./assets/carelog.svg" alt=""></div>
-        <span class="tag">Wellbeing</span>
-        <h2>CareLog</h2>
-        <p class="description">Keep a private symptom journal, notice recent patterns, and prepare a clear visit summary.</p>
-        <span class="open">Open app <span class="arrow" aria-hidden="true">&rarr;</span></span>
+        <div class="card-copy">
+          <span class="tag">Wellbeing</span>
+          <h2>CareLog</h2>
+          <p class="description">Keep a private symptom journal, notice recent patterns, and prepare a clear visit summary.</p>
+          <span class="open">Open app <span class="arrow" aria-hidden="true">&rarr;</span></span>
+        </div>
       </a>
 
       <a class="card" href="./reflection-space/">
         <div class="icon"><img src="./assets/reflection.svg" alt=""></div>
-        <span class="tag">Reflection</span>
-        <h2>Reflection Space</h2>
-        <p class="description">A quiet guided space to write, consider relationships, and keep meaningful moments.</p>
-        <span class="open">Open app <span class="arrow" aria-hidden="true">&rarr;</span></span>
+        <div class="card-copy">
+          <span class="tag">Reflection</span>
+          <h2>Reflection Space</h2>
+          <p class="description">A quiet guided space to write, consider relationships, and keep meaningful moments.</p>
+          <span class="open">Open app <span class="arrow" aria-hidden="true">&rarr;</span></span>
+        </div>
       </a>
     </section>
 
