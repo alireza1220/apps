@@ -946,7 +946,7 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
         <div class="security-warning" role="note">
           <strong id="keyWarningTitle">API keys are secrets.</strong>
           <span id="generalKeyWarning">Official guidance recommends keeping API keys out of browser apps. FLOW does not save this field, but clicking Explain sends the key to this site’s backend so it can relay the request to OpenAI. Use only a restricted, short-lived project key.</span>
-          <span id="staticPagesWarning" hidden>This static GitHub Pages demo has no AI backend. Do not enter an API key here.</span>
+          <span id="staticPagesWarning" hidden>On GitHub Pages, your request goes directly from this browser to OpenAI. The key is kept in this tab's session storage so the apps on this site can use it, but any script running on this site can read it. Use only a restricted, short-lived project key.</span>
         </div>
         <label for="apiKey">OpenAI API key</label>
         <div class="key-row">
@@ -954,7 +954,7 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
           <button class="key-control" id="toggleKey" type="button" aria-pressed="false">Show</button>
           <button class="key-control" id="forgetKey" type="button">Remove</button>
         </div>
-        <p class="key-note"><strong>Remove it when finished:</strong> the key is not written to browser storage. Select Remove after use, close the tab, and revoke or rotate the key if you suspect exposure.</p>
+        <p class="key-note"><strong>Remove it when finished:</strong> on GitHub Pages the key is stored only for this browser-tab session. Select Remove after use, then <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">revoke or rotate it in OpenAI</a> when you are done. Removing it here does not revoke it.</p>
         <p class="ai-enabled-note">AI comprehension is now available in Practice.</p>
         <p class="ai-status" id="keyStatus" role="status" aria-live="polite"></p>
       </section>
@@ -1058,13 +1058,22 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       let testHintsUsed = false;
       const libraryDialog = document.querySelector('#libraryDialog');
       const isStaticPages = location.hostname.endsWith('.github.io');
+      const sharedAPIKeyStorageKey = 'apps-openai-key-v1';
+      function readSharedAPIKey() {
+        try { return sessionStorage.getItem(sharedAPIKeyStorageKey) || ''; }
+        catch (_) { return ''; }
+      }
+      function writeSharedAPIKey(value) {
+        try {
+          if (value) sessionStorage.setItem(sharedAPIKeyStorageKey, value);
+          else sessionStorage.removeItem(sharedAPIKeyStorageKey);
+        } catch (_) {}
+      }
       if (isStaticPages) {
         document.body.classList.add('static-pages');
-        els.apiKey.disabled = true;
-        els.apiKey.placeholder = 'Unavailable on this static demo';
-        document.querySelector('#toggleKey').disabled = true;
         document.querySelector('#generalKeyWarning').hidden = true;
         document.querySelector('#staticPagesWarning').hidden = false;
+        els.apiKey.value = readSharedAPIKey();
       }
 
       function persistLibrary() {
@@ -1309,13 +1318,6 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       }
 
       function updateAIAvailability({ announce = false } = {}) {
-        if (isStaticPages) {
-          document.body.classList.remove('ai-enabled');
-          els.openAI.hidden = true;
-          els.keyStatus.textContent = 'AI comprehension is unavailable on this static GitHub Pages demo.';
-          els.keyStatus.classList.add('error');
-          return;
-        }
         const enabled = hasValidAPIKey();
         document.body.classList.toggle('ai-enabled', enabled);
         els.openAI.hidden = !enabled;
@@ -1410,10 +1412,6 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
       }
 
       async function explainPassage() {
-        if (isStaticPages) {
-          setAIStatus('AI comprehension is unavailable on this static GitHub Pages demo. Do not enter an API key here.', true);
-          return;
-        }
         const apiKey = els.apiKey.value.trim();
         const passage = els.source.value.trim();
         if (!apiKey || apiKey.length < 20) {
@@ -1438,16 +1436,24 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
         setAIStatus('Reading for meaning…');
 
         try {
-          const response = await fetch('/api/explain', {
+          const endpoint = isStaticPages ? 'https://api.openai.com/v1/responses' : '/api/explain';
+          const requestBody = isStaticPages ? {
+            model: 'gpt-5-mini',
+            store: false,
+            max_output_tokens: 900,
+            instructions: 'You are a concise learning coach. Help the learner understand a passage before memorising it. Explain only what the supplied passage supports. Use plain language and preserve important distinctions. Return four short sections with these exact headings: PLAIN MEANING, STRUCTURE, KEY WORDS, CHECK YOUR UNDERSTANDING. Under the last heading, give exactly two short questions. Do not provide memorisation tricks yet.',
+            input: 'Explain this passage for comprehension before memorisation:\n\n' + passage
+          } : { passage };
+          const response = await fetch(endpoint, {
             method: 'POST',
             cache: 'no-store',
-            credentials: 'same-origin',
+            credentials: isStaticPages ? 'omit' : 'same-origin',
             referrerPolicy: 'no-referrer',
             headers: {
               'Authorization': `Bearer ${apiKey}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ passage })
+            body: JSON.stringify(requestBody)
           });
 
           const data = await response.json().catch(() => ({}));
@@ -1466,7 +1472,7 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
           setAIStatus('Explanation ready. Make sure it matches your understanding, then remove your API key in Settings when finished.');
         } catch (error) {
           const message = error instanceof TypeError
-            ? 'Could not reach OpenAI from this browser. Check your connection and try again.'
+            ? 'Could not reach OpenAI from this browser. The browser connection may be blocked; check your connection and try again.'
             : error.message;
           setAIStatus(message || 'The explanation could not be generated.', true);
         } finally {
@@ -1773,13 +1779,17 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
           updateAIAvailability({ announce: true });
         }
       });
-      els.apiKey.addEventListener('input', () => updateAIAvailability({ announce: true }));
+      els.apiKey.addEventListener('input', () => {
+        if (isStaticPages) writeSharedAPIKey(els.apiKey.value.trim());
+        updateAIAvailability({ announce: true });
+      });
       document.querySelector('#clearExplanation').addEventListener('click', () => {
         els.aiOutput.textContent = '';
         els.aiResult.hidden = true;
         setAIStatus('Explanation cleared. Remove your API key in Settings when finished.');
       });
       document.querySelector('#forgetKey').addEventListener('click', () => {
+        if (isStaticPages) writeSharedAPIKey('');
         els.apiKey.value = '';
         els.apiKey.type = 'password';
         document.querySelector('#toggleKey').textContent = 'Show';
@@ -1788,7 +1798,9 @@ Practice does not make perfect. Only perfect practice makes perfect.</textarea>
         els.keyStatus.textContent = 'API key removed from this tab.';
         els.keyStatus.classList.remove('error');
       });
-      window.addEventListener('pagehide', () => { els.apiKey.value = ''; });
+      window.addEventListener('pagehide', () => {
+        if (!isStaticPages) els.apiKey.value = '';
+      });
       document.querySelector('#editPassage').addEventListener('click', () => {
         document.body.classList.remove('session-active', 'focus-mode');
         els.focusButton.textContent = 'Focus mode';

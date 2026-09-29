@@ -69,6 +69,11 @@
       line-height: 1.7;
     }
 
+    .header-side { display: grid; justify-items: end; gap: 14px; }
+    .key-pill { min-height: 38px; padding: 0 13px; color: var(--ink); background: white; border: 1px solid var(--line); border-radius: 999px; font-size: .78rem; font-weight: 800; }
+    .key-pill[data-connected="true"] { color: #176b4d; border-color: #afd8c8; background: #f1fbf7; }
+    .key-pill[data-connected="true"]::before { content: "●"; margin-right: 7px; color: #2a9a6e; }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -145,21 +150,72 @@
 
     footer { margin-top: 28px; color: var(--muted); font-size: .82rem; }
 
+    .key-gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 18px; background: rgba(16,24,40,.66); backdrop-filter: blur(8px); }
+    .key-gate[hidden] { display: none; }
+    .key-card { width: min(560px, 100%); max-height: calc(100vh - 36px); overflow: auto; padding: 27px; background: white; border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 30px 100px rgba(16,24,40,.28); }
+    .key-card h2 { margin: 0 0 8px; font-size: 1.55rem; }
+    .key-card > p { margin: 0 0 20px; color: var(--muted); line-height: 1.6; }
+    .key-card label { display: block; margin-bottom: 7px; font-size: .8rem; font-weight: 800; }
+    .key-input-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .key-input-row input { min-width: 0; height: 46px; padding: 0 12px; border: 1px solid #cfd5df; border-radius: 11px; outline: none; font: inherit; }
+    .key-input-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,91,214,.13); }
+    .small-button { min-height: 46px; padding: 0 13px; color: var(--ink); background: white; border: 1px solid #cfd5df; border-radius: 11px; font-weight: 800; }
+    .key-warning { margin: 16px 0; padding: 13px 14px; color: #654c08; background: #fff8df; border: 1px solid #ead898; border-radius: 12px; font-size: .78rem; line-height: 1.55; }
+    .key-warning strong { display: block; margin-bottom: 3px; color: #4d3800; }
+    .key-consent { display: flex !important; align-items: flex-start; gap: 9px; margin: 14px 0 !important; color: #525c6d; font-size: .78rem !important; line-height: 1.5; }
+    .key-consent input { margin-top: 3px; }
+    .key-actions { display: flex; align-items: center; gap: 9px; margin-top: 18px; }
+    .save-key { min-height: 44px; padding: 0 16px; color: white; background: var(--ink); border: 0; border-radius: 11px; font-weight: 850; }
+    .save-key:disabled { opacity: .45; cursor: not-allowed; }
+    .text-button { padding: 8px 3px; color: var(--muted); background: none; border: 0; font-weight: 750; }
+    .remove-key { margin-left: auto; color: #a33b46; }
+    .key-error { min-height: 20px; margin: 9px 0 0; color: #a33b46; font-size: .78rem; font-weight: 750; }
+    .revoke-note { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: .76rem; line-height: 1.55; }
+    .revoke-note a { color: var(--accent); font-weight: 800; }
+
     @media (max-width: 720px) {
       .shell { padding-top: 42px; }
       header { display: block; }
       .intro { margin-top: 20px; }
+      .header-side { justify-items: start; }
+      .key-card { padding: 21px; border-radius: 19px; }
+      .key-actions { flex-wrap: wrap; }
+      .remove-key { margin-left: 0; width: 100%; text-align: left; }
     }
   </style>
 </head>
 <body>
+  <section class="key-gate" id="keyGate" role="dialog" aria-modal="true" aria-labelledby="keyGateTitle" hidden>
+    <div class="key-card">
+      <h2 id="keyGateTitle">Connect your OpenAI API key</h2>
+      <p>Use your own key for optional AI features across this collection during this browser-tab session.</p>
+      <label for="sharedApiKey">OpenAI API key</label>
+      <div class="key-input-row">
+        <input id="sharedApiKey" type="password" placeholder="sk-…" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button class="small-button" id="toggleSharedKey" type="button" aria-pressed="false">Show</button>
+      </div>
+      <div class="key-warning" role="note"><strong>This is a client-side connection.</strong>The key is available to scripts running on this GitHub Pages site. It is kept in session storage for this tab, but browser extensions, compromised scripts, or future site code could potentially read it. Use a restricted, temporary project key—not a broad or long-lived key.</div>
+      <label class="key-consent"><input id="keyConsent" type="checkbox"> <span>I understand the browser risk and am using my own temporary or restricted key.</span></label>
+      <p class="key-error" id="keyError" role="status" aria-live="polite"></p>
+      <div class="key-actions">
+        <button class="save-key" id="saveSharedKey" type="button" disabled>Use for this tab</button>
+        <button class="text-button" id="continueWithoutKey" type="button">Continue without AI</button>
+        <button class="text-button remove-key" id="removeSharedKey" type="button">Remove from browser</button>
+      </div>
+      <div class="revoke-note"><strong>Finished using the apps?</strong> Remove the key here, then <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">revoke or rotate it in OpenAI</a>. Removing it here only clears this tab; it does not invalidate the key.</div>
+    </div>
+  </section>
+
   <main class="shell">
     <header>
       <div>
         <p class="eyebrow">Personal projects</p>
         <h1>Apps</h1>
       </div>
-      <p class="intro">Small, focused tools for learning, creating, and getting useful things done.</p>
+      <div class="header-side">
+        <p class="intro">Small, focused tools for learning, creating, and getting useful things done.</p>
+        <button class="key-pill" id="manageKey" type="button" data-connected="false">OpenAI key · not connected</button>
+      </div>
     </header>
 
     <section class="grid" aria-label="Available apps">
@@ -196,5 +252,28 @@
 
     <footer>More apps will appear here as the collection grows.</footer>
   </main>
+  <script>
+    (() => {
+      const STORAGE_KEY = 'apps-openai-key-v1';
+      const gate = document.querySelector('#keyGate');
+      const input = document.querySelector('#sharedApiKey');
+      const consent = document.querySelector('#keyConsent');
+      const save = document.querySelector('#saveSharedKey');
+      const manage = document.querySelector('#manageKey');
+      const error = document.querySelector('#keyError');
+      function currentKey() { try { return sessionStorage.getItem(STORAGE_KEY) || ''; } catch (_) { return ''; } }
+      function renderState() { const connected = currentKey().length >= 20; manage.dataset.connected = String(connected); manage.textContent = connected ? 'OpenAI key · connected for this tab' : 'OpenAI key · not connected'; document.querySelector('#removeSharedKey').hidden = !connected; }
+      function openGate() { input.value = currentKey(); consent.checked = false; save.disabled = true; error.textContent = ''; gate.hidden = false; requestAnimationFrame(() => input.focus()); }
+      function closeGate() { input.value = ''; input.type = 'password'; document.querySelector('#toggleSharedKey').textContent = 'Show'; document.querySelector('#toggleSharedKey').setAttribute('aria-pressed', 'false'); gate.hidden = true; }
+      consent.addEventListener('change', () => { save.disabled = !consent.checked; });
+      manage.addEventListener('click', openGate);
+      document.querySelector('#continueWithoutKey').addEventListener('click', closeGate);
+      document.querySelector('#toggleSharedKey').addEventListener('click', event => { const show = input.type === 'password'; input.type = show ? 'text' : 'password'; event.currentTarget.textContent = show ? 'Hide' : 'Show'; event.currentTarget.setAttribute('aria-pressed', String(show)); });
+      save.addEventListener('click', () => { const key = input.value.trim(); if (key.length < 20 || !key.startsWith('sk-')) { error.textContent = 'Enter a complete OpenAI API key beginning with sk-.'; input.focus(); return; } try { sessionStorage.setItem(STORAGE_KEY, key); } catch (_) { error.textContent = 'This browser did not allow session storage.'; return; } closeGate(); renderState(); });
+      document.querySelector('#removeSharedKey').addEventListener('click', () => { try { sessionStorage.removeItem(STORAGE_KEY); } catch (_) {} input.value = ''; error.textContent = 'Key removed from this browser tab. Revoke it in OpenAI if you are finished with it.'; renderState(); });
+      renderState();
+      if (!currentKey()) openGate();
+    })();
+  </script>
 </body>
 </html>
