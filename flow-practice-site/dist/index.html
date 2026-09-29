@@ -97,6 +97,20 @@
       border-radius: 50%;
       background: var(--good);
     }
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 8px 13px;
+      color: var(--ink);
+      background: rgba(255,255,255,.88);
+      font-size: .82rem;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .home-link:hover { border-color: #b9c1d6; background: white; }
     .settings-button {
       min-height: 40px;
       border: 1px solid var(--line);
@@ -796,6 +810,7 @@
         <div class="brand-copy"><strong>FLOW</strong><span>A little practice. A lasting memory.</span></div>
       </div>
       <div class="header-tools">
+        <a class="home-link" href="../" aria-label="Back to the apps home page">← Apps home</a>
         <div class="saved" id="savedStatus">Saved on this device</div>
         <button class="settings-button" id="openLibrary" type="button">Passages</button>
         <button class="settings-button" id="openSettings" type="button">Settings</button>
